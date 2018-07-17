@@ -16,6 +16,19 @@ namespace IQueryable.Filter.Lib
             return (value, property);
         }
 
+        private static Expression GetPropertyEnsureIsString(ParameterExpression parameter, string propertyName)
+        {
+            var propertyMaybeString = Expression.Property(parameter, propertyName);
+
+            if (propertyMaybeString.Type != typeof(string))
+            {
+                var toStringMethod = typeof(object).GetMethod("ToString");
+                return Expression.Call(propertyMaybeString, toStringMethod);
+            }
+
+            return propertyMaybeString;
+        }
+
         private static Expression CreatePredicate(
             ParameterExpression parameter,
             string propertyName,
@@ -34,7 +47,7 @@ namespace IQueryable.Filter.Lib
         private static Expression ContainsPredicate(ParameterExpression parameter, string propertyName, object fieldValue)
         {
             var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
-            var property = GetProperty();
+            var property = GetPropertyEnsureIsString(parameter, propertyName);
 
             var value = Expression.Constant(Convert.ToString(fieldValue));
 
@@ -43,19 +56,34 @@ namespace IQueryable.Filter.Lib
                     containsMethod,
                     value
                 );
+        }
 
-            Expression GetProperty()
-            {
-                var propertyMaybeString = Expression.Property(parameter, propertyName);
+        private static Expression StartsWithPredicate(ParameterExpression parameter, string propertyName, object fieldValue)
+        {
+            var containsMethod = typeof(string).GetMethod("StartsWith", new[] { typeof(string) });
+            var property = GetPropertyEnsureIsString(parameter, propertyName);
 
-                if (propertyMaybeString.Type != typeof(string))
-                {
-                    var toStringMethod = typeof(object).GetMethod("ToString");
-                    return Expression.Call(propertyMaybeString, toStringMethod);
-                }
+            var value = Expression.Constant(Convert.ToString(fieldValue));
 
-                return propertyMaybeString;
-            }
+            return Expression.Call(
+                    property,
+                    containsMethod,
+                    value
+                );
+        }
+
+        private static Expression EndsWithPredicate(ParameterExpression parameter, string propertyName, object fieldValue)
+        {
+            var containsMethod = typeof(string).GetMethod("EndsWith", new[] { typeof(string) });
+            var property = GetPropertyEnsureIsString(parameter, propertyName);
+
+            var value = Expression.Constant(Convert.ToString(fieldValue));
+
+            return Expression.Call(
+                    property,
+                    containsMethod,
+                    value
+                );
         }
 
         private static Expression EqualPredicate(
@@ -131,6 +159,16 @@ namespace IQueryable.Filter.Lib
                 case FilterPredicates.Contains:
                     {
                         return ContainsPredicate(parameter, propertyName, value);
+                    }
+
+                case FilterPredicates.StartsWith:
+                    {
+                        return StartsWithPredicate(parameter, propertyName, value);
+                    }
+
+                case FilterPredicates.EndsWith:
+                    {
+                        return EndsWithPredicate(parameter, propertyName, value);
                     }
 
                 case FilterPredicates.Equal:

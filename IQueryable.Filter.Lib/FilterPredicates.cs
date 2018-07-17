@@ -5,6 +5,8 @@ namespace IQueryable.Filter.Lib
         Equal,
         NotEqual,
         Contains,
+        StartsWith,
+        EndsWith,
         LessThan,
         LessThanOrEqual,
         GreaterThan,
