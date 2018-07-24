@@ -3,7 +3,6 @@ using System.Linq;
 using IQueryable.Filter.Lib;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using Xunit;
 
 namespace IQueryable.Filter.Tests
