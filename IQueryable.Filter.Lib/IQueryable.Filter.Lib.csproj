@@ -4,4 +4,17 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageId>IQueryable.Filter.Lib</PackageId>
+    <Title>IQueryable.Filter</Title>
+    <Authors>szszoke</Authors>
+    <Description></Description>
+    <Copyright>Copyright (c) 2018 Szabolcs Szőke</Copyright>
+    <PackageLicenseUrl>https://github.com/szszoke/iqueryable-filter/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/szszoke/iqueryable-filter</PackageProjectUrl>
+    <PackageTags>iqueryable linq dynamic filter query</PackageTags>
+    <RepositoryUrl>https://github.com/szszoke/iqueryable-filter</RepositoryUrl>
+  </PropertyGroup>
 </Project>
