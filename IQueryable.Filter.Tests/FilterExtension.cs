@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using IQueryable.Filter.Lib;
@@ -62,6 +63,54 @@ namespace IQueryable.Filter.Tests
                     .ToList();
 
                 Assert.Empty(entities);
+            }
+        }
+
+        [Fact]
+        public void Nested()
+        {
+            var options = new DbContextOptionsBuilder<TestDbContext>()
+                .UseInMemoryDatabase(databaseName: "Nested_Database")
+                .Options;
+
+            using (var context = new TestDbContext(options))
+            {
+                context.FilterEntities.Add(new FilterEntity
+                {
+                    IntField = 1,
+                    StringField = "",
+                    DoubleField = 1.0,
+                    DateTimeField = DateTime.Now,
+                    NestedEntity = new NestedEntity {
+                        Bar = 1,
+                    }
+                });
+                context.FilterEntities.Add(new FilterEntity
+                {
+                    IntField = 2,
+                    StringField = "",
+                    DoubleField = 2.0,
+                    DateTimeField = DateTime.Now,
+                    NestedEntity = new NestedEntity {
+                        Bar = 2,
+                    }
+                });
+
+                context.SaveChanges();
+
+                var entities = context.FilterEntities
+                    .Filter(new List<FilterCondition>
+                    {
+                        new FilterCondition
+                        {
+                            FieldName = "foo.bar",
+                            Value = 1,
+                            Predicate = FilterPredicates.Equal,
+                        },
+                    })
+                    .ToList();
+
+                Assert.Single(entities);
             }
         }
     }

@@ -12,5 +12,6 @@ namespace IQueryable.Filter.Tests
         { }
 
         public DbSet<FilterEntity> FilterEntities { get; set; }
+        public DbSet<NestedEntity> NestedEntity { get; set; }
     }
 }

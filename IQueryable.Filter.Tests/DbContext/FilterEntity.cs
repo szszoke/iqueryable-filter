@@ -16,5 +16,7 @@ namespace IQueryable.Filter.Tests
         public double DoubleField { get; set; }
         [Filter(FieldName = "dateTimeField")]
         public DateTime DateTimeField { get; set; }
+        [Filter(FieldName = "foo")]
+        public NestedEntity NestedEntity { get; set; }
     }
 }
