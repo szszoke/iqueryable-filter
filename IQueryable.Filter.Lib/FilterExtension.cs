@@ -8,17 +8,57 @@ namespace IQueryable.Filter.Lib
 {
     public static class FilterExtension
     {
-        private static (ConstantExpression value, MemberExpression property) GetValueAndProperty(ParameterExpression parameter, string propertyName, object fieldValue)
+        private static bool FilterByFieldName(PropertyInfo propertyInfo, string fieldName)
+                => propertyInfo.GetCustomAttribute<FilterAttribute>()
+                    .FieldName == fieldName;
+        private static MemberExpression GetProperty(Expression left, string fieldName)
         {
-            var property = Expression.Property(parameter, propertyName);
+            var propertyInfos = left
+                .Type
+                .GetProperties()
+                .Where(prop => prop.IsDefined(typeof(FilterAttribute), false));
+
+            var dotIndex = fieldName.IndexOf(".");
+            var propertyInfo = GetPropertyInfo();
+
+            if (dotIndex > 0)
+            {
+                return GetProperty(
+                    Expression.Property(left, propertyInfo.Name),
+                    fieldName.Substring(dotIndex + 1));
+            }
+
+            return Expression.Property(left, propertyInfo.Name);
+
+            PropertyInfo GetPropertyInfo()
+            {
+                if (dotIndex > 0)
+                {
+                    return propertyInfos
+                        .Where(prop => FilterByFieldName(prop, fieldName.Substring(0, dotIndex)))
+                        .FirstOrDefault();
+                }
+
+                return propertyInfos
+                    .Where(prop => FilterByFieldName(prop, fieldName))
+                    .FirstOrDefault();
+            }
+        }
+
+        private static (ConstantExpression value, MemberExpression property) GetValueAndProperty(
+            ParameterExpression parameter,
+            string fieldName,
+            object fieldValue)
+        {
+            var property = GetProperty(parameter, fieldName);
             var value = Expression.Constant(Convert.ChangeType(fieldValue, property.Type));
 
             return (value, property);
         }
 
-        private static Expression GetPropertyEnsureIsString(ParameterExpression parameter, string propertyName)
+        private static Expression GetPropertyEnsureIsString(ParameterExpression parameter, string fieldName)
         {
-            var propertyMaybeString = Expression.Property(parameter, propertyName);
+            var propertyMaybeString = GetProperty(parameter, fieldName);
 
             if (propertyMaybeString.Type != typeof(string))
             {
@@ -31,23 +71,23 @@ namespace IQueryable.Filter.Lib
 
         private static Expression CreatePredicate(
             ParameterExpression parameter,
-            string propertyName,
+            string fieldName,
             object fieldValue,
             Func<Expression, Expression, BinaryExpression> binaryExpression)
         {
             var (value, property) = GetValueAndProperty(
                 parameter,
-                propertyName,
+                fieldName,
                 fieldValue
             );
 
             return binaryExpression(value, property);
         }
 
-        private static Expression ContainsPredicate(ParameterExpression parameter, string propertyName, object fieldValue)
+        private static Expression ContainsPredicate(ParameterExpression parameter, string fieldName, object fieldValue)
         {
             var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
-            var property = GetPropertyEnsureIsString(parameter, propertyName);
+            var property = GetPropertyEnsureIsString(parameter, fieldName);
 
             var value = Expression.Constant(Convert.ToString(fieldValue));
 
@@ -58,10 +98,10 @@ namespace IQueryable.Filter.Lib
                 );
         }
 
-        private static Expression StartsWithPredicate(ParameterExpression parameter, string propertyName, object fieldValue)
+        private static Expression StartsWithPredicate(ParameterExpression parameter, string fieldName, object fieldValue)
         {
             var containsMethod = typeof(string).GetMethod("StartsWith", new[] { typeof(string) });
-            var property = GetPropertyEnsureIsString(parameter, propertyName);
+            var property = GetPropertyEnsureIsString(parameter, fieldName);
 
             var value = Expression.Constant(Convert.ToString(fieldValue));
 
@@ -72,10 +112,10 @@ namespace IQueryable.Filter.Lib
                 );
         }
 
-        private static Expression EndsWithPredicate(ParameterExpression parameter, string propertyName, object fieldValue)
+        private static Expression EndsWithPredicate(ParameterExpression parameter, string fieldName, object fieldValue)
         {
             var containsMethod = typeof(string).GetMethod("EndsWith", new[] { typeof(string) });
-            var property = GetPropertyEnsureIsString(parameter, propertyName);
+            var property = GetPropertyEnsureIsString(parameter, fieldName);
 
             var value = Expression.Constant(Convert.ToString(fieldValue));
 
@@ -88,179 +128,163 @@ namespace IQueryable.Filter.Lib
 
         private static Expression EqualPredicate(
             ParameterExpression parameter,
-            string propertyName,
+            string fieldName,
             object fieldValue
         ) => CreatePredicate(
             parameter,
-            propertyName,
+            fieldName,
             fieldValue,
             Expression.Equal
         );
 
         private static Expression NotEqualPredicate(
             ParameterExpression parameter,
-            string propertyName,
+            string fieldName,
             object fieldValue
         ) => CreatePredicate(
             parameter,
-            propertyName,
+            fieldName,
             fieldValue,
             Expression.NotEqual
         );
 
         private static Expression LessThanPredicate(
             ParameterExpression parameter,
-            string propertyName,
+            string fieldName,
             object fieldValue
         ) => CreatePredicate(
             parameter,
-            propertyName,
+            fieldName,
             fieldValue,
             Expression.LessThan
         );
 
         private static Expression LessThanOrEqualPredicate(
             ParameterExpression parameter,
-            string propertyName,
+            string fieldName,
             object fieldValue
         ) => CreatePredicate(
             parameter,
-            propertyName,
+            fieldName,
             fieldValue,
             Expression.LessThanOrEqual
         );
 
         private static Expression GreaterThanPredicate(
             ParameterExpression parameter,
-            string propertyName,
+            string fieldName,
             object fieldValue
         ) => CreatePredicate(
             parameter,
-            propertyName,
+            fieldName,
             fieldValue,
             Expression.GreaterThan
         );
 
         private static Expression GreaterThanOrEqualPredicate(
             ParameterExpression parameter,
-            string propertyName,
+            string fieldName,
             object fieldValue
         ) => CreatePredicate(
             parameter,
-            propertyName,
+            fieldName,
             fieldValue,
             Expression.GreaterThanOrEqual
         );
 
-        private static Expression ApplyPredicate(ParameterExpression parameter, FilterPredicates? predicate, string propertyName, Type propertyType, object value)
+        private static Expression ApplyPredicate(
+            ParameterExpression parameter,
+            FilterPredicates? predicate,
+            string fieldName,
+            object value)
         {
             switch (predicate)
             {
                 case FilterPredicates.Contains:
                     {
-                        return ContainsPredicate(parameter, propertyName, value);
+                        return ContainsPredicate(parameter, fieldName, value);
                     }
 
                 case FilterPredicates.StartsWith:
                     {
-                        return StartsWithPredicate(parameter, propertyName, value);
+                        return StartsWithPredicate(parameter, fieldName, value);
                     }
 
                 case FilterPredicates.EndsWith:
                     {
-                        return EndsWithPredicate(parameter, propertyName, value);
+                        return EndsWithPredicate(parameter, fieldName, value);
                     }
 
                 case FilterPredicates.Equal:
                     {
-                        return EqualPredicate(parameter, propertyName, value);
+                        return EqualPredicate(parameter, fieldName, value);
                     }
 
                 case FilterPredicates.NotEqual:
                     {
-                        return NotEqualPredicate(parameter, propertyName, value);
+                        return NotEqualPredicate(parameter, fieldName, value);
                     }
 
                 case FilterPredicates.LessThan:
                     {
-                        return LessThanPredicate(parameter, propertyName, value);
+                        return LessThanPredicate(parameter, fieldName, value);
                     }
 
                 case FilterPredicates.LessThanOrEqual:
                     {
-                        return LessThanOrEqualPredicate(parameter, propertyName, value);
+                        return LessThanOrEqualPredicate(parameter, fieldName, value);
                     }
 
                 case FilterPredicates.GreaterThan:
                     {
-                        return GreaterThanPredicate(parameter, propertyName, value);
+                        return GreaterThanPredicate(parameter, fieldName, value);
                     }
 
                 case FilterPredicates.GreaterThanOrEqual:
                     {
-                        return GreaterThanOrEqualPredicate(parameter, propertyName, value);
+                        return GreaterThanOrEqualPredicate(parameter, fieldName, value);
                     }
 
                 default:
-                    return ContainsPredicate(parameter, propertyName, value);
+                    return ContainsPredicate(parameter, fieldName, value);
             }
         }
 
         public static IQueryable<T> Filter<T>(this IQueryable<T> query, IEnumerable<FilterCondition> filterConditions) where T : class, new()
         {
-            var type = typeof(T);
-
-            var properties = type
-                .GetProperties()
-                .Where(prop => prop.IsDefined(typeof(FilterAttribute), false));
-
             var param = Expression.Parameter(typeof(T), "param");
             var filterExpression = (Expression)null;
 
             foreach (var filterCondition in filterConditions)
             {
-                var property = properties
-                    .Where(prop => FilterByFieldName(prop, filterCondition.FieldName))
-                    .FirstOrDefault();
-
-                if (property != null)
+                if (filterExpression == null)
                 {
-                    if (filterExpression == null)
-                    {
-                        filterExpression = ApplyPredicate(
+                    filterExpression = ApplyPredicate(
+                        param,
+                        filterCondition.Predicate,
+                        filterCondition.FieldName,
+                        filterCondition.Value);
+                }
+                else
+                {
+                    filterExpression = Expression.AndAlso(
+                        filterExpression,
+                        ApplyPredicate(
                             param,
                             filterCondition.Predicate,
-                            property.Name,
-                            property.PropertyType,
-                            filterCondition.Value);
-                    }
-                    else
-                    {
-                        filterExpression = Expression.AndAlso(
-                            filterExpression,
-                            ApplyPredicate(
-                                param,
-                                filterCondition.Predicate,
-                                property.Name,
-                                property.PropertyType,
-                                filterCondition.Value
-                            )
-                        );
-                    }
+                            filterCondition.FieldName,
+                            filterCondition.Value
+                        )
+                    );
                 }
             }
 
             if (filterExpression != null)
             {
-                Console.WriteLine(filterExpression);
                 return query.Where(Expression.Lambda<Func<T, bool>>(filterExpression, param));
             }
 
             return query;
-
-            bool FilterByFieldName(PropertyInfo propertyInfo, string fieldName)
-                => propertyInfo.GetCustomAttribute<FilterAttribute>()
-                    .FieldName == fieldName;
         }
     }
 }
