@@ -84,9 +84,13 @@ namespace IQueryable.Filter.Lib
             return binaryExpression(value, property);
         }
 
-        private static Expression ContainsPredicate(ParameterExpression parameter, string fieldName, object fieldValue)
+        private static Expression ContainsPredicate(
+            ParameterExpression parameter,
+            string fieldName,
+            object fieldValue)
         {
-            var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+            var containsMethod = typeof(string)
+                .GetMethod("Contains", new[] { typeof(string) });
             var property = GetPropertyEnsureIsString(parameter, fieldName);
 
             var value = Expression.Constant(Convert.ToString(fieldValue));
@@ -98,7 +102,10 @@ namespace IQueryable.Filter.Lib
                 );
         }
 
-        private static Expression StartsWithPredicate(ParameterExpression parameter, string fieldName, object fieldValue)
+        private static Expression StartsWithPredicate(
+            ParameterExpression parameter,
+            string fieldName,
+            object fieldValue)
         {
             var containsMethod = typeof(string).GetMethod("StartsWith", new[] { typeof(string) });
             var property = GetPropertyEnsureIsString(parameter, fieldName);
@@ -112,7 +119,10 @@ namespace IQueryable.Filter.Lib
                 );
         }
 
-        private static Expression EndsWithPredicate(ParameterExpression parameter, string fieldName, object fieldValue)
+        private static Expression EndsWithPredicate(
+            ParameterExpression parameter,
+            string fieldName,
+            object fieldValue)
         {
             var containsMethod = typeof(string).GetMethod("EndsWith", new[] { typeof(string) });
             var property = GetPropertyEnsureIsString(parameter, fieldName);
@@ -123,6 +133,32 @@ namespace IQueryable.Filter.Lib
                     property,
                     containsMethod,
                     value
+                );
+        }
+
+        private static Expression OneOfPredicate(
+            ParameterExpression parameter,
+            string fieldName,
+            List<object> fieldValues)
+        {
+            var containsMethod = typeof(List<object>)
+                .GetMethod("Contains", new[] { typeof(object) });
+            var property = GetProperty(parameter, fieldName);
+
+            var values = Expression.Constant(
+                fieldValues
+                    .Select(fieldValue =>
+                        Convert.ChangeType(fieldValue, property.Type)
+                    )
+                    .ToList());
+
+            return Expression.Call(
+                    values,
+                    containsMethod,
+                    Expression.Convert(
+                        property,
+                        typeof(object)
+                    )
                 );
         }
 
@@ -194,59 +230,95 @@ namespace IQueryable.Filter.Lib
 
         private static Expression ApplyPredicate(
             ParameterExpression parameter,
-            FilterPredicates? predicate,
-            string fieldName,
-            object value)
+            FilterCondition filterCondition)
         {
-            switch (predicate)
+            switch (filterCondition.Predicate)
             {
                 case FilterPredicates.Contains:
                     {
-                        return ContainsPredicate(parameter, fieldName, value);
+                        return ContainsPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
                     }
 
                 case FilterPredicates.StartsWith:
                     {
-                        return StartsWithPredicate(parameter, fieldName, value);
+                        return StartsWithPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
                     }
 
                 case FilterPredicates.EndsWith:
                     {
-                        return EndsWithPredicate(parameter, fieldName, value);
+                        return EndsWithPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
                     }
 
                 case FilterPredicates.Equal:
                     {
-                        return EqualPredicate(parameter, fieldName, value);
+                        return EqualPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
                     }
 
                 case FilterPredicates.NotEqual:
                     {
-                        return NotEqualPredicate(parameter, fieldName, value);
+                        return NotEqualPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
                     }
 
                 case FilterPredicates.LessThan:
                     {
-                        return LessThanPredicate(parameter, fieldName, value);
+                        return LessThanPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
                     }
 
                 case FilterPredicates.LessThanOrEqual:
                     {
-                        return LessThanOrEqualPredicate(parameter, fieldName, value);
+                        return LessThanOrEqualPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
                     }
 
                 case FilterPredicates.GreaterThan:
                     {
-                        return GreaterThanPredicate(parameter, fieldName, value);
+                        return GreaterThanPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
                     }
 
                 case FilterPredicates.GreaterThanOrEqual:
                     {
-                        return GreaterThanOrEqualPredicate(parameter, fieldName, value);
+                        return GreaterThanOrEqualPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
+                    }
+
+                case FilterPredicates.OneOf:
+                    {
+                        return OneOfPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Values);
                     }
 
                 default:
-                    return ContainsPredicate(parameter, fieldName, value);
+                    return ContainsPredicate(
+                            parameter,
+                            filterCondition.FieldName,
+                            filterCondition.Value);
             }
         }
 
@@ -261,9 +333,7 @@ namespace IQueryable.Filter.Lib
                 {
                     filterExpression = ApplyPredicate(
                         param,
-                        filterCondition.Predicate,
-                        filterCondition.FieldName,
-                        filterCondition.Value);
+                        filterCondition);
                 }
                 else
                 {
@@ -271,9 +341,7 @@ namespace IQueryable.Filter.Lib
                         filterExpression,
                         ApplyPredicate(
                             param,
-                            filterCondition.Predicate,
-                            filterCondition.FieldName,
-                            filterCondition.Value
+                            filterCondition
                         )
                     );
                 }

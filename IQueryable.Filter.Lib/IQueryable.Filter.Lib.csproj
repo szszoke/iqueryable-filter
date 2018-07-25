@@ -6,11 +6,12 @@
 
   <PropertyGroup>
     <IsPackable>true</IsPackable>
-    <PackageVersion>1.0.0</PackageVersion>
+    <PackageVersion>1.0.2</PackageVersion>
     <PackageId>IQueryable.Filter.Lib</PackageId>
     <Title>IQueryable.Filter</Title>
-    <Authors>szszoke</Authors>
-    <Description></Description>
+    <Authors>Szabolcs Szőke</Authors>
+    <Description>Helper functions to write dynamic LINQ queries</Description>
+    <PackageReleaseNotes>Added support for OneOf predicate</PackageReleaseNotes>
     <Copyright>Copyright (c) 2018 Szabolcs Szőke</Copyright>
     <PackageLicenseUrl>https://github.com/szszoke/iqueryable-filter/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/szszoke/iqueryable-filter</PackageProjectUrl>

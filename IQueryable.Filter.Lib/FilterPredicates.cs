@@ -11,5 +11,6 @@ namespace IQueryable.Filter.Lib
         LessThanOrEqual,
         GreaterThan,
         GreaterThanOrEqual,
+        OneOf,
     }
 }
