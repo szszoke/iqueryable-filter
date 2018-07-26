@@ -5,3 +5,4 @@ dotnet: 2.1.301
 script:
   - dotnet restore
   - dotnet build
+  - dotnet test IQueryable.Filter.Tests/IQueryable.Filter.Tests.csproj
