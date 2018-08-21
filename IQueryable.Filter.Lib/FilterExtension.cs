@@ -18,7 +18,7 @@ namespace IQueryable.Filter.Lib
                 .GetProperties()
                 .Where(prop => prop.IsDefined(typeof(FilterAttribute), false));
 
-            var dotIndex = fieldName.IndexOf(".");
+            var dotIndex = fieldName.IndexOf(".", StringComparison.Ordinal);
             var propertyInfo = GetPropertyInfo();
 
             if (dotIndex > 0)
@@ -81,7 +81,7 @@ namespace IQueryable.Filter.Lib
                 fieldValue
             );
 
-            return binaryExpression(value, property);
+            return binaryExpression(property, value);
         }
 
         private static Expression ContainsPredicate(
