@@ -173,7 +173,7 @@ namespace IQueryable.Filter.Lib
             Expression.Equal
         );
 
-        private static Expression NotEqualPredicate(
+        private static Expression DoesNotEqualPredicate(
             ParameterExpression parameter,
             string fieldName,
             object fieldValue
@@ -266,9 +266,9 @@ namespace IQueryable.Filter.Lib
                             filterCondition.Value);
                     }
 
-                case FilterPredicates.NotEqual:
+                case FilterPredicates.DoesNotEqual:
                     {
-                        return NotEqualPredicate(
+                        return DoesNotEqualPredicate(
                             parameter,
                             filterCondition.FieldName,
                             filterCondition.Value);

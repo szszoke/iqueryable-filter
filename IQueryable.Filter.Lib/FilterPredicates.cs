@@ -3,7 +3,7 @@ namespace IQueryable.Filter.Lib
     public enum FilterPredicates
     {
         Equal,
-        NotEqual,
+        DoesNotEqual,
         Contains,
         StartsWith,
         EndsWith,
